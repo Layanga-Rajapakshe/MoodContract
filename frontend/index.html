@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LearnWeb3 First dApp</title>
+    <style>
+        body {
+          text-align: center;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+      
+        div {
+          width: 20%;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+        }
+      
+        button {
+          width: 100%;
+          margin: 10px 0px 5px 0px;
+        }
+      </style>
+  </head>
+  <body>
+  <!-- We will add more code here -->
+  <script>
+    //here we are just declaring two variables. We will be assigning them their respective values in the next script
+            var getMood
+            var setMood
+    </script>
+    <script type="module">
+      //importing viem library to interact with ethereum accounts
+      import {
+        createWalletClient,
+        custom,
+        getContract,
+      }from "https://esm.sh/viem";
+      import { sepolia } from "https://esm.sh/viem/chains";
+
+      //create a client that connects the user to ethereum sepolia
+      const walletClient = createWalletClient({
+        chain: sepolia,
+        transport: custom(window.ethereum),
+      });
+
+      //make your wallet extension to open a pop-up to connect yor wallet
+      //accounts will be an array
+      const accounts = await walletClient.requestAddresses();
+      //obtain first account in the array
+      const [address] = accounts;
+
+      //need to add these values from deployed smart-contract
+      const MoodContractAddress = "0xE6c77D78438f8526A065343f6C57E1300A1E8578";
+      const MoodContractABI = [
+                                {
+                                  "inputs": [
+                                    {
+                                      "internalType": "string",
+                                      "name": "_mood",
+                                      "type": "string"
+                                    }
+                                  ],
+                                  "name": "setMood",
+                                  "outputs": [],
+                                  "stateMutability": "nonpayable",
+                                  "type": "function"
+                                },
+                                {
+                                  "inputs": [],
+                                  "name": "getMood",
+                                  "outputs": [
+                                    {
+                                      "internalType": "string",
+                                      "name": "",
+                                      "type": "string"
+                                    }
+                                  ],
+                                  "stateMutability": "view",
+                                  "type": "function"
+                                }
+                              ] ;
+
+      //create an instance for my contract to interact with frontend
+      const MoodContractInstance = getContract({
+        address: MoodContractAddress,
+        abi: MoodContractABI,
+        client: walletClient,
+      });
+
+      //function to view mood from smart contract. no gas fee as view only
+      getMood = async function () {
+        const mood = await MoodContractInstance.read.getMood();
+        document.getElementById("showMood").innerText = `Your Mood: ${mood}`;
+      }
+
+      //function to set mood in smart contract. gas fee as it is a write function
+      setMood = async function () {
+        const mood = document.getElementById("mood").value;
+        await MoodContractInstance.write.setMood([mood],{
+          account: address
+        });
+      }
+    </script>
+    <div>
+      <h1>This is my dApp!</h1>
+      <p>Here we can set or get the mood:</p>
+      <label for="mood">Input Mood:</label> <br />
+      <input type="text" id="mood" />
+  
+      <button onclick="getMood()">Get Mood</button>
+      <button onclick="setMood()">Set Mood</button>
+      <p id="showMood"></p>
+    </div>
+  </body>
+</html>
